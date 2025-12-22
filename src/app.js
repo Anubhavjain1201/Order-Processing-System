@@ -1,6 +1,6 @@
 import express from "express"
 import cors from "cors"
-import { customErrorHandler } from "./middewares/customErrorHandler.js"
+import { customErrorHandler } from "./middlewares/customErrorHandler.middlewares.js"
 
 const app = express()
 

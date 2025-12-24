@@ -1,6 +1,7 @@
 import mongoose, { Schema } from "mongoose"
 import bcrypt from "bcrypt"
 import jwt from "jsonwebtoken"
+import { TOKEN_ISSUER, SCOPES } from "../utils/constants.js"
 
 const userSchema = new Schema(
     {
@@ -39,12 +40,12 @@ userSchema.pre("save", async function () {
 userSchema.methods.generateAccessToken = function () {
     return jwt.sign(
         {
-            scope: "orders"
+            scope: SCOPES.ACCESS_ORDER
         },
         process.env.SECRET_KEY,
         {
             expiresIn: "15m",
-            issuer: "identity.orderproc.com",
+            issuer: TOKEN_ISSUER,
             subject: this._id.toString()
         }
     )
@@ -53,12 +54,13 @@ userSchema.methods.generateAccessToken = function () {
 userSchema.methods.generateRefreshToken = function () {
     return jwt.sign(
         {
-            scope: "refresh"
+            scope: SCOPES.REFRESH
         },
         process.env.SECRET_KEY,
         {
             expiresIn: "5d",
-            issuer: "identity.orderproc.com"
+            issuer: TOKEN_ISSUER,
+            subject: this._id.toString()
         }
     )
 }

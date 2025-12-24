@@ -1,6 +1,8 @@
 import { User } from "../models/user.models.js"
 import { asyncHandler } from "../utils/asyncHandler.js"
+import { SCOPES, TOKEN_ISSUER } from "../utils/constants.js"
 import CustomError from "../utils/customError.js"
+import jwt from "jsonwebtoken"
 
 // Register user API
 const register = asyncHandler(async (req, res) => {
@@ -59,15 +61,91 @@ const login = asyncHandler(async (req, res) => {
     await existingUser.save({ validateBeforeSave: false })
 
     console.log("AuthController - Login user - user logged in successfully")
-    return res.status(200).json({
-        accessToken: accessToken,
-        refreshToken: refreshToken
-    })
+    return res
+        .status(200)
+        .cookie("refreshToken", refreshToken, {
+            httpOnly: true,
+            secure: true,
+            path: "/api/auth/refresh"
+        })
+        .json({
+            accessToken: accessToken,
+            refreshToken: refreshToken
+        })
 })
 
 // refresh token API
-const refreshToken = asyncHandler(async (req, res) => {})
+const refreshToken = asyncHandler(async (req, res) => {
+    console.log("AuthController - Refresh token - Refreshing access token")
 
-const generateTokens = (user) => {}
+    const incomingRefreshToken = req.cookies?.refreshToken
+    if (!incomingRefreshToken) {
+        console.log(
+            "AuthController - Refresh token - No refresh token found in the cookie"
+        )
+        throw new CustomError(401, "No refresh token supplied")
+    }
+
+    // Verify incoming refresh token
+    try {
+        const decodedToken = jwt.verify(
+            incomingRefreshToken,
+            process.env.SECRET_KEY,
+            {
+                issuer: TOKEN_ISSUER
+            }
+        )
+
+        // verify scope
+        if (decodedToken?.scope !== SCOPES.REFRESH) {
+            console.log(
+                `AuthController - Refresh token - Invalid token scope: ${decodedToken?.scope}`
+            )
+            throw new CustomError(401, "Invalid token scope")
+        }
+
+        // verify subject
+        const user = await User.findById(decodedToken?.sub)
+        if (!user) {
+            console.log(
+                `AuthController - Refresh token - Invalid token subject: ${decodedToken?.sub}`
+            )
+            throw new CustomError(401, "Invalid token subject")
+        }
+
+        // Match the token from the database
+        if (incomingRefreshToken !== user.refreshToken) {
+            console.log("AuthController - Refresh token - Unexpected token")
+            throw new CustomError(401, "Unexpected token")
+        }
+
+        // generate new tokens
+        const accessToken = user.generateAccessToken()
+        const newRefreshToken = user.generateRefreshToken()
+
+        user.refreshToken = newRefreshToken
+        await user.save({ validateBeforeSave: false })
+
+        console.log(
+            "AuthController - Refresh token - refreshed the access token"
+        )
+        return res
+            .status(200)
+            .cookie("refreshToken", newRefreshToken, {
+                httpOnly: true,
+                secure: true,
+                path: "/api/auth/refresh"
+            })
+            .json({
+                accessToken: accessToken,
+                refreshToken: newRefreshToken
+            })
+    } catch (error) {
+        console.log(
+            `AuthController - Refresh token - Invalid refresh token, error: ${error}`
+        )
+        throw new CustomError(401, "Invalid refresh token")
+    }
+})
 
 export { register, login, refreshToken }

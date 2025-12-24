@@ -4,6 +4,6 @@ export const customErrorHandler = (error, req, res, next) => {
         `Error occurred while processing the request: ${error.message}`
     )
     res.status(error.status || 500).json({
-        message: error.message || "Internal Server Error"
+        message: error.status ? error.message : "Internal Server Error"
     })
 }

@@ -45,7 +45,7 @@ userSchema.methods.generateAccessToken = function () {
         {
             expiresIn: "15m",
             issuer: "identity.orderproc.com",
-            subject: this._id
+            subject: this._id.toString()
         }
     )
 }
@@ -61,6 +61,10 @@ userSchema.methods.generateRefreshToken = function () {
             issuer: "identity.orderproc.com"
         }
     )
+}
+
+userSchema.methods.isPasswordValid = async function (password) {
+    return await bcrypt.compare(password, this.password)
 }
 
 export const User = mongoose.model("User", userSchema)

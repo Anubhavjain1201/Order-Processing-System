@@ -5,7 +5,6 @@ import CustomError from "../utils/customError.js"
 // Register user API
 const register = asyncHandler(async (req, res) => {
     console.log("AuthController - Register user - Starting user registration")
-
     const { username, email, password } = req.body
 
     // Check if the user already exists with the given email/username
@@ -35,9 +34,40 @@ const register = asyncHandler(async (req, res) => {
 })
 
 // login user API
-const login = asyncHandler(async (req, res) => {})
+const login = asyncHandler(async (req, res) => {
+    console.log("AuthController - Login user - Starting user login process")
+    const { email, password } = req.body
+
+    // Verify the credentials
+    const existingUser = await User.findOne({ email })
+    if (!existingUser) {
+        console.log("AuthController - Login user - Invalid email")
+        throw new CustomError(400, "Invalid credentials")
+    }
+
+    const isPasswordValid = await existingUser.isPasswordValid(password)
+    if (!isPasswordValid) {
+        console.log("AuthController - Login user - Invalid password")
+        throw new CustomError(400, "Invalid credentials")
+    }
+
+    // Generate tokens and save them to db
+    const accessToken = existingUser.generateAccessToken()
+    const refreshToken = existingUser.generateRefreshToken()
+
+    existingUser.refreshToken = refreshToken
+    await existingUser.save({ validateBeforeSave: false })
+
+    console.log("AuthController - Login user - user logged in successfully")
+    return res.status(200).json({
+        accessToken: accessToken,
+        refreshToken: refreshToken
+    })
+})
 
 // refresh token API
 const refreshToken = asyncHandler(async (req, res) => {})
+
+const generateTokens = (user) => {}
 
 export { register, login, refreshToken }

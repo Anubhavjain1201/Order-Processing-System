@@ -5,6 +5,7 @@ import { customErrorHandler } from "./middlewares/customErrorHandler.middlewares
 const app = express()
 
 app.use(express.json())
+app.use(express.urlencoded({ extended: true }))
 app.use(cors())
 
 import healthCheckRouter from "./routes/healthcheck.routes.js"

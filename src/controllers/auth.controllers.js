@@ -8,11 +8,16 @@ const register = asyncHandler(async (req, res) => {
 
     const { username, email, password } = req.body
 
-    // Check if the user already exists with the given email
-    const isExistingUser = await User.findOne({ email })
+    // Check if the user already exists with the given email/username
+    const isExistingUser = await User.findOne({
+        $or: [{ email }, { username }]
+    })
     if (isExistingUser) {
         console.log("AuthController - Register user - user already exists")
-        throw new CustomError(400, "A user with the given email already exists")
+        throw new CustomError(
+            400,
+            "A user with the given credentials already exists"
+        )
     }
 
     // Create a user and save it in the database

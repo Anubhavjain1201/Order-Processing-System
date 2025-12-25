@@ -4,6 +4,7 @@ import { Product } from "../models/product.models.js"
 import { asyncHandler } from "../utils/asyncHandler.js"
 import CustomError from "../utils/customError.js"
 
+// Create order API
 const createOrder = asyncHandler(async (req, res) => {
     console.log("OrderController - CreateOrder - Starting order creation")
 
@@ -111,6 +112,7 @@ const createOrder = asyncHandler(async (req, res) => {
     }
 })
 
+// Get order details API
 const getOrderDetails = asyncHandler(async (req, res) => {
     // Extract the order Id
     const { id } = req.params

@@ -6,74 +6,109 @@ import CustomError from "../utils/customError.js"
 
 const createOrder = asyncHandler(async (req, res) => {
     console.log("OrderController - CreateOrder - Starting order creation")
-    const { items } = req.body
-    const userId = req.user._id
 
-    if (!items || items.length == 0) {
-        console.log(
-            "OrderController - CreateOrder - No items provided for the order"
-        )
-        throw new CustomError(400, "No items provided for the order")
-    }
+    // Use session since its a distributed transaction
+    const session = await mongoose.startSession()
 
-    let subTotal = 0
-    const orderItems = []
+    try {
+        let newOrderResult
 
-    for (const item of items) {
-        const product = await Product.findById(item.productId)
-        if (!product) {
-            console.log(
-                `OrderController - CreateOrder - Product not found: ${item.productId}`
+        // Use withTransaction to handle transaction lifecycle
+        await session.withTransaction(async () => {
+            const { items } = req.body
+            const userId = req.user._id
+
+            if (!items || items.length == 0) {
+                console.log(
+                    "OrderController - CreateOrder - No items provided for the order"
+                )
+                throw new CustomError(400, "No items provided for the order")
+            }
+
+            let subTotal = 0
+            const orderItems = []
+
+            for (const item of items) {
+                const product = await Product.findById(item.productId).session(
+                    session
+                )
+                if (!product) {
+                    console.log(
+                        `OrderController - CreateOrder - Product not found: ${item.productId}`
+                    )
+                    throw new CustomError(
+                        400,
+                        `Product not found: ${item.productId}`
+                    )
+                }
+
+                // Validate product inventory
+                if (product.quantity < item.quantity) {
+                    console.log(
+                        `OrderController - CreateOrder - Insufficient stock for product: ${product._id}`
+                    )
+                    throw new CustomError(
+                        400,
+                        `Insufficient stock for product: ${product._id}`
+                    )
+                }
+
+                // Calculate line total for this item
+                const itemTotal = product.price * item.quantity
+                subTotal += itemTotal
+
+                // Push formatted item into our array (Snapshotting the price!)
+                orderItems.push({
+                    productId: product._id,
+                    price_at_purchase: product.price,
+                    quantity: item.quantity
+                })
+
+                // update the stock inventory for the product
+                product.quantity -= item.quantity
+                await product.save({ session })
+            }
+
+            const taxRate = 0.18 // 18% tax
+            const totalTax = subTotal * taxRate
+            const grandTotal = subTotal + totalTax
+
+            const createdOrders = await Order.create(
+                [
+                    {
+                        userId: userId,
+                        items: orderItems,
+                        totals: {
+                            sub_total: subTotal,
+                            tax: totalTax,
+                            grand_total: grandTotal
+                        }
+                    }
+                ],
+                { session }
             )
-            throw new CustomError(400, `Product not found: ${item.productId}`)
-        }
 
-        // Validate product inventory
-        if (product.quantity < item.quantity) {
-            console.log(
-                `OrderController - CreateOrder - Insufficient stock for product: ${product._id}`
-            )
-            throw new CustomError(
-                400,
-                `Insufficient stock for product: ${product._id}`
-            )
-        }
-
-        // Calculate line total for this item
-        const itemTotal = product.price * item.quantity
-        subTotal += itemTotal
-
-        // Push formatted item into our array (Snapshotting the price!)
-        orderItems.push({
-            productId: product._id,
-            price_at_purchase: product.price,
-            quantity: item.quantity
+            newOrderResult = createdOrders[0]
         })
 
-        product.quantity -= item.quantity
-        await product.save()
+        console.log(
+            "OrderController - CreateOrder - Order submitted successfully"
+        )
+        return res.status(201).json({
+            message: "Order created successfully",
+            orderId: newOrderResult._id,
+            totalAmount: newOrderResult.totals.grand_total
+        })
+    } catch (error) {
+        console.error(
+            `OrderController - CreateOrder - Order creation failed with error: ${error}`
+        )
+        throw new CustomError(400, "Order couldn't be processed")
+    } finally {
+        // clean up the session
+        console.log("OrderController - CreateOrder - cleaning up the session")
+        session.endSession()
     }
-
-    const taxRate = 0.18 // 18% tax
-    const totalTax = subTotal * taxRate
-    const grandTotal = subTotal + totalTax
-
-    const newOrder = await Order.create({
-        userId: userId,
-        items: orderItems,
-        totals: {
-            sub_total: subTotal,
-            tax: totalTax,
-            grand_total: grandTotal
-        }
-    })
-
-    console.log("OrderController - CreateOrder - Created a new order")
-    return res.status(201).json({
-        message: "Order created successfully",
-        orderId: newOrder._id,
-        totalAmount: grandTotal
-    })
 })
 
 const getOrderDetails = asyncHandler(async (req, res) => {

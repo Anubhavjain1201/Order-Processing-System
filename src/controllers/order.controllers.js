@@ -135,6 +135,14 @@ const getOrderDetails = asyncHandler(async (req, res) => {
         throw new CustomError(400, "Invalid order id")
     }
 
+    // Restrict orders to the user who is sending the request to prevent data leakage
+    if (!order.userId.equals(req.user._id)) {
+        console.log(
+            `OrderController - GetOrderDetails - Invalid user for this order`
+        )
+        throw new CustomError(400, "Invalid order id")
+    }
+
     console.log(
         `OrderController - GetOrderDetails - Fetched order details for the id: ${id}`
     )

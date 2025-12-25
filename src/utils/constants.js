@@ -7,4 +7,12 @@ const SCOPES = {
     ACCESS_ORDER: "orders"
 }
 
-export { TOKEN_ISSUER, SCOPES }
+// Order status
+const ORDER_STATUS = {
+    PENDING: "Pending",
+    PROCESSING: "Processing",
+    PROCESSED: "Processed",
+    FAILED: "Failed"
+}
+
+export { TOKEN_ISSUER, SCOPES, ORDER_STATUS }

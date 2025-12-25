@@ -145,7 +145,7 @@ const getOrderDetails = asyncHandler(async (req, res) => {
         dateOfOrder: order.orderDate,
         totalAmount: order.totals.grand_total,
         items: order.items.map((item) => ({
-            productId: item.productId,
+            productId: item.productId._id,
             name: item.productId.name,
             price: item.price_at_purchase,
             quantity: item.quantity

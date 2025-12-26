@@ -14,6 +14,7 @@ class OrderService {
 
             // Use withTransaction to handle transaction lifecycle
             await session.withTransaction(async () => {
+                // validate items input
                 if (!items || items.length == 0) {
                     console.log(
                         "OrderService - createOrder - No items provided for the order"
@@ -28,29 +29,7 @@ class OrderService {
                 const orderItems = []
 
                 for (const item of items) {
-                    const product = await Product.findById(
-                        item.productId
-                    ).session(session)
-                    if (!product) {
-                        console.log(
-                            `OrderService - createOrder - Product not found: ${item.productId}`
-                        )
-                        throw new CustomError(
-                            400,
-                            `Product not found: ${item.productId}`
-                        )
-                    }
-
-                    // Validate product inventory
-                    if (product.quantity < item.quantity) {
-                        console.log(
-                            `OrderService - createOrder - Insufficient stock for product: ${product._id}`
-                        )
-                        throw new CustomError(
-                            400,
-                            `Insufficient stock for product: ${product._id}`
-                        )
-                    }
+                    const product = await this.validateItem(item, session)
 
                     // Calculate line total for this item
                     const itemTotal = product.price * item.quantity
@@ -68,9 +47,8 @@ class OrderService {
                     await product.save({ session })
                 }
 
-                const taxRate = 0.18 // 18% tax
-                const totalTax = subTotal * taxRate
-                const grandTotal = subTotal + totalTax
+                // Calculate final totals
+                const { totalTax, grandTotal } = this.calculateTotals(subTotal)
 
                 const createdOrders = await Order.create(
                     [
@@ -149,6 +127,41 @@ class OrderService {
             `OrderService - fetchOrderDetails - Fetched order details for id: ${orderId}`
         )
         return order
+    }
+
+    async validateItem(item, session) {
+        // fetch product from db
+        const product = await Product.findById(item.productId).session(session)
+        if (!product) {
+            console.log(
+                `OrderService - validateItem - Product not found: ${item.productId}`
+            )
+            throw new CustomError(400, `Product not found: ${item.productId}`)
+        }
+
+        // Validate product inventory
+        if (product.quantity < item.quantity) {
+            console.log(
+                `OrderService - validateItem - Insufficient stock for product: ${product._id}`
+            )
+            throw new CustomError(
+                400,
+                `Insufficient stock for product: ${product._id}`
+            )
+        }
+
+        return product
+    }
+
+    calculateTotals(subTotal) {
+        const taxRate = 0.18 // 18% tax (Ideally store per-product tax in DB)
+        const totalTax = subTotal * taxRate
+        const grandTotal = subTotal + totalTax
+
+        return {
+            totalTax,
+            grandTotal
+        }
     }
 }
 

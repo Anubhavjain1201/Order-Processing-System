@@ -1,8 +1,115 @@
 import { Order } from "../models/order.models.js"
+import { Product } from "../models/product.models.js"
 import CustomError from "../utils/customError.js"
+import mongoose from "mongoose"
 
 class OrderService {
-    async createOrder() {}
+    // Create order for a user
+    async createOrder(items, userId) {
+        // Use session since its a distributed transaction
+        const session = await mongoose.startSession()
+
+        try {
+            let newOrderResult
+
+            // Use withTransaction to handle transaction lifecycle
+            await session.withTransaction(async () => {
+                if (!items || items.length == 0) {
+                    console.log(
+                        "OrderService - createOrder - No items provided for the order"
+                    )
+                    throw new CustomError(
+                        400,
+                        "No items provided for the order"
+                    )
+                }
+
+                let subTotal = 0
+                const orderItems = []
+
+                for (const item of items) {
+                    const product = await Product.findById(
+                        item.productId
+                    ).session(session)
+                    if (!product) {
+                        console.log(
+                            `OrderService - createOrder - Product not found: ${item.productId}`
+                        )
+                        throw new CustomError(
+                            400,
+                            `Product not found: ${item.productId}`
+                        )
+                    }
+
+                    // Validate product inventory
+                    if (product.quantity < item.quantity) {
+                        console.log(
+                            `OrderService - createOrder - Insufficient stock for product: ${product._id}`
+                        )
+                        throw new CustomError(
+                            400,
+                            `Insufficient stock for product: ${product._id}`
+                        )
+                    }
+
+                    // Calculate line total for this item
+                    const itemTotal = product.price * item.quantity
+                    subTotal += itemTotal
+
+                    // Push formatted item into our array (Snapshotting the price!)
+                    orderItems.push({
+                        productId: product._id,
+                        price_at_purchase: product.price,
+                        quantity: item.quantity
+                    })
+
+                    // update the stock inventory for the product
+                    product.quantity -= item.quantity
+                    await product.save({ session })
+                }
+
+                const taxRate = 0.18 // 18% tax
+                const totalTax = subTotal * taxRate
+                const grandTotal = subTotal + totalTax
+
+                const createdOrders = await Order.create(
+                    [
+                        {
+                            userId: userId,
+                            items: orderItems,
+                            totals: {
+                                sub_total: subTotal,
+                                tax: totalTax,
+                                grand_total: grandTotal
+                            }
+                        }
+                    ],
+                    { session }
+                )
+
+                newOrderResult = createdOrders[0]
+            })
+
+            console.log(
+                `OrderService - createOrder - Order submitted successfully with id: ${newOrderResult?._id}`
+            )
+            return {
+                orderId: newOrderResult?._id,
+                totalOrderValue: newOrderResult?.totals?.grand_total
+            }
+        } catch (error) {
+            console.error(
+                `OrderService - createOrder - Order creation failed with error: ${error}`
+            )
+
+            if (error instanceof CustomError) throw error
+            else throw new CustomError(400, "Order couldn't be processed")
+        } finally {
+            // clean up the session
+            console.log("OrderService - createOrder - cleaning up the session")
+            session.endSession()
+        }
+    }
 
     // Get order details for a user
     async fetchOrderDetails(orderId, userId) {
@@ -10,6 +117,15 @@ class OrderService {
             `OrderService - fetchOrderDetails - Fetching order details for id: ${orderId}`
         )
 
+        // Validate id format
+        if (!mongoose.Types.ObjectId.isValid(orderId)) {
+            console.log(
+                `OrderService - fetchOrderDetails - Invalid id format: ${orderId}`
+            )
+            throw new CustomError(400, "Invalid order id")
+        }
+
+        // Validate orderId in the database
         const order = await Order.findById(orderId).populate(
             "items.productId",
             "name"

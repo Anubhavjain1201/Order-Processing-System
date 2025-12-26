@@ -48,7 +48,7 @@ class OrderService {
                 }
 
                 // Calculate final totals
-                const { totalTax, grandTotal } = this.calculateTotals(subTotal)
+                const { totalTax, grandTotal } = this.#calculateTotals(subTotal)
 
                 const createdOrders = await Order.create(
                     [
@@ -153,7 +153,7 @@ class OrderService {
         return product
     }
 
-    calculateTotals(subTotal) {
+    #calculateTotals(subTotal) {
         const taxRate = 0.18 // 18% tax (Ideally store per-product tax in DB)
         const totalTax = subTotal * taxRate
         const grandTotal = subTotal + totalTax

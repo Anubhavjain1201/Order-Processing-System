@@ -3,6 +3,7 @@ import { Order } from "../models/order.models.js"
 import { Product } from "../models/product.models.js"
 import { asyncHandler } from "../utils/asyncHandler.js"
 import CustomError from "../utils/customError.js"
+import OrderService from "../services/order.services.js"
 
 // Create order API
 const createOrder = asyncHandler(async (req, res) => {
@@ -116,37 +117,20 @@ const createOrder = asyncHandler(async (req, res) => {
 const getOrderDetails = asyncHandler(async (req, res) => {
     // Extract the order Id
     const { id } = req.params
-    console.log(
-        `OrderController - GetOrderDetails - Fetching order details for the id: ${id}`
-    )
+    console.log(`OrderController - GetOrderDetails - Getting order details`)
 
     // Validate id format
     if (!mongoose.Types.ObjectId.isValid(id)) {
-        console.log("OrderController - GetOrderDetails - Invalid id format")
-        throw new CustomError(400, "Invalid order id")
-    }
-
-    // Get order details
-    const order = await Order.findById(id).populate("items.productId", "name")
-    if (!order) {
         console.log(
-            `OrderController - GetOrderDetails - No order found with id: ${id}`
+            `OrderController - GetOrderDetails - Invalid id format: ${id}`
         )
         throw new CustomError(400, "Invalid order id")
     }
 
-    // Restrict orders to the user who is sending the request to prevent data leakage
-    if (!order.userId.equals(req.user._id)) {
-        console.log(
-            `OrderController - GetOrderDetails - Invalid user for this order`
-        )
-        throw new CustomError(400, "Invalid order id")
-    }
+    const order = await OrderService.fetchOrderDetails(id, req.user._id)
 
-    console.log(
-        `OrderController - GetOrderDetails - Fetched order details for the id: ${id}`
-    )
-    res.status(200).json({
+    console.log(`OrderController - GetOrderDetails - Fetched order details`)
+    return res.status(200).json({
         orderId: order._id,
         userId: order.userId,
         status: order.status,

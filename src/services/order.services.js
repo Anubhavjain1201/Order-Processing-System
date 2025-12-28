@@ -6,6 +6,14 @@ import mongoose from "mongoose"
 class OrderService {
     // Create order for a user
     async createOrder(items, userId) {
+        // validate items input
+        if (!items || items.length == 0) {
+            console.log(
+                "OrderService - createOrder - No items provided for the order"
+            )
+            throw new CustomError(400, "No items provided for the order")
+        }
+
         // Use session since its a distributed transaction
         const session = await mongoose.startSession()
 
@@ -14,17 +22,6 @@ class OrderService {
 
             // Use withTransaction to handle transaction lifecycle
             await session.withTransaction(async () => {
-                // validate items input
-                if (!items || items.length == 0) {
-                    console.log(
-                        "OrderService - createOrder - No items provided for the order"
-                    )
-                    throw new CustomError(
-                        400,
-                        "No items provided for the order"
-                    )
-                }
-
                 let subTotal = 0
                 const orderItems = []
 
@@ -32,8 +29,7 @@ class OrderService {
                     const product = await this.validateItem(item, session)
 
                     // Calculate line total for this item
-                    const itemTotal = product.price * item.quantity
-                    subTotal += itemTotal
+                    subTotal += product.price * item.quantity
 
                     // Push formatted item into our array (Snapshotting the price!)
                     orderItems.push({
@@ -95,7 +91,7 @@ class OrderService {
             `OrderService - fetchOrderDetails - Fetching order details for id: ${orderId}`
         )
 
-        // Validate id format
+        // Validate orderId format
         if (!mongoose.Types.ObjectId.isValid(orderId)) {
             console.log(
                 `OrderService - fetchOrderDetails - Invalid id format: ${orderId}`

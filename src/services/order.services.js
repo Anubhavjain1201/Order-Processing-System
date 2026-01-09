@@ -1,4 +1,5 @@
 import { Order } from "../models/order.models.js"
+import { Outbox } from "../models/outbox.models.js"
 import { Product } from "../models/product.models.js"
 import CustomError from "../utils/customError.js"
 import mongoose from "mongoose"
@@ -62,6 +63,9 @@ class OrderService {
                 )
 
                 newOrderResult = createdOrders[0]
+
+                // Create an outbox table entry using the same session
+                await Outbox.create([{}], { session })
             })
 
             console.log(

@@ -15,4 +15,21 @@ const ORDER_STATUS = {
     FAILED: "Failed"
 }
 
-export { TOKEN_ISSUER, SCOPES, ORDER_STATUS }
+// Outbox message status
+const OUTBOX_MESSAGE_STATUS = {
+    PENDING: "Pending",
+    PROCESSED: "Processed",
+    FAILED: "Failed"
+}
+
+const OUTBOX_EVENT_TYPE = {
+    ORDER_CREATED: "Order_Created"
+}
+
+export {
+    TOKEN_ISSUER,
+    SCOPES,
+    ORDER_STATUS,
+    OUTBOX_MESSAGE_STATUS,
+    OUTBOX_EVENT_TYPE
+}

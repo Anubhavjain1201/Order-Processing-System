@@ -1,7 +1,7 @@
 import app from "./app.js"
 import dotenv from "dotenv"
 import { connectDb } from "./db/db-manager.js"
-import { initCronJobs } from "./worker/worker.js"
+import { initCronJobs } from "./worker/producer.js"
 
 dotenv.config({
     path: "./.env"

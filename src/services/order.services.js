@@ -1,6 +1,7 @@
 import { Order } from "../models/order.models.js"
 import { Outbox } from "../models/outbox.models.js"
 import { Product } from "../models/product.models.js"
+import { OUTBOX_EVENT_TYPE } from "../utils/constants.js"
 import CustomError from "../utils/customError.js"
 import mongoose from "mongoose"
 
@@ -65,7 +66,18 @@ class OrderService {
                 newOrderResult = createdOrders[0]
 
                 // Create an outbox table entry using the same session
-                await Outbox.create([{}], { session })
+                await Outbox.create(
+                    [
+                        {
+                            eventType: OUTBOX_EVENT_TYPE.ORDER_CREATED,
+                            payload: {
+                                orderId: newOrderResult?._id,
+                                userId: userId
+                            }
+                        }
+                    ],
+                    { session }
+                )
             })
 
             console.log(

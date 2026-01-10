@@ -1,6 +1,7 @@
 import cron from "node-cron"
 import { Outbox } from "../models/outbox.models.js"
 import { OUTBOX_MESSAGE_STATUS } from "../utils/constants.js"
+import QueueService from "../services/queue.services.js"
 
 let isProcessing = false
 
@@ -39,8 +40,30 @@ const processOutboxMessages = async function () {
         status: OUTBOX_MESSAGE_STATUS.PENDING
     }).limit(process.env.OUTBOX_PROCESSING_BATCH_SIZE)
 
-    if (messages.length === 0) return
+    if (messages.length === 0) {
+        console.log("Producer - No Outbox message to process")
+        return
+    }
 
     for (const msg of messages) {
+        try {
+            console.log(
+                `Producer - Processing outbox message with orderId: ${msg?.payload?.orderId}`
+            )
+            // push the message to queue
+            await QueueService.sendMessage(msg.payload)
+
+            // update masg status
+            msg.status = OUTBOX_MESSAGE_STATUS.PROCESSED
+            await msg.save()
+
+            console.log(
+                `Producer - Processed outbox message with orderId: ${msg?.payload?.orderId}`
+            )
+        } catch (error) {
+            console.error(
+                `Producer - Error occurred while processing outbox message: ${error}`
+            )
+        }
     }
 }

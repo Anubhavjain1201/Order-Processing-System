@@ -1,9 +1,7 @@
-import cron from "node-cron"
-
 const initConsumerJob = () => {
-    console.log("Consumer - Initializing SQS consumer job")
+    console.log("Consumer - Initializing SQS consumer")
 
-    console.log("Consumer - Consumer cron job initialized")
+    console.log("Consumer - SQS consumer initialized")
 }
 
 export default initConsumerJob

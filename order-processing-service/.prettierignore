@@ -2,3 +2,4 @@
 /localstack-data
 .env
 *.env
+/build

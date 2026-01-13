@@ -1,15 +1,10 @@
-import dotenv from "dotenv"
 import { connectDb } from "./db/db-manager.js"
-import initConsumerJob from "./worker/consumer.js"
-
-dotenv.config({
-    path: "./.env"
-})
+import consumer from "./worker/consumer.js"
 
 connectDb()
     .then(() => {
-        // intialize consumer job
-        initConsumerJob()
+        // start the consumer
+        consumer.start()
 
         console.log(`order-processing-service is up and running`)
     })

@@ -1,10 +1,11 @@
 import mongoose from "mongoose"
+import { env } from "../config/env.js"
 
 async function connectDb(): Promise<void> {
     try {
-        await mongoose.connect(process.env.MONGO_URI!, {
-            maxPoolSize: parseInt(process.env.MONGO_MAX_POOL_SIZE || "100"),
-            minPoolSize: parseInt(process.env.MONGO_MIN_POOL_SIZE || "10")
+        await mongoose.connect(env.MONGO_URI, {
+            maxPoolSize: env.MAX_POOL_SIZE,
+            minPoolSize: env.MIN_POOL_SIZE
         })
         console.log("MongoDB connected successfully")
     } catch (error) {

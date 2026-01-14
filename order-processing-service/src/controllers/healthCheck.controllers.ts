@@ -1,8 +1,7 @@
 import type { Request, Response } from "express"
 import mongoose from "mongoose"
-import { asyncHandler } from "../utils/asyncHandler.js"
 
-const healthCheck = asyncHandler(async (_: Request, res: Response) => {
+const healthCheck = async (_: Request, res: Response) => {
     try {
         if (mongoose.connection.readyState === 1) {
             console.log("HealthCheckController - System health status: OK")
@@ -19,6 +18,6 @@ const healthCheck = asyncHandler(async (_: Request, res: Response) => {
         )
         return res.status(503).json({ status: "Error" })
     }
-})
+}
 
 export { healthCheck }

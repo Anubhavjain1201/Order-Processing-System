@@ -2,12 +2,37 @@ import { Consumer, type ConsumerOptions } from "sqs-consumer"
 import { sqsClient } from "../config/sqs-client.js"
 import { env } from "../config/env.js"
 import type { Message } from "@aws-sdk/client-sqs"
+import {
+    MessageBodySchema,
+    type MessageBodyType
+} from "../types/sqsMessage.types.js"
+import MessageProcessingService from "../services/messageProcessing.services.js"
 
 // Function to handle and process SQS message
 const handleSQSMessage = async (
     message: Message
 ): Promise<Message | undefined> => {
-    return message
+    try {
+        // If message has no body, return message and delete from queue
+        if (!message?.Body) {
+            console.log("Consumer - Message body is empty, nothing to process!")
+            return message
+        }
+
+        // sanitize message body
+        const validatedBody: MessageBodyType = MessageBodySchema.parse(
+            message.Body
+        )
+
+        // process message
+        await MessageProcessingService.processSQSMessage(validatedBody)
+        return message
+    } catch (error) {
+        console.log(
+            `Consumer - Error occurred while processing message: ${message?.MessageId} : ${error}`
+        )
+        return undefined
+    }
 }
 
 const consumerOptions: ConsumerOptions = {

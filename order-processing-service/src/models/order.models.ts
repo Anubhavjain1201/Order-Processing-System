@@ -17,6 +17,7 @@ const orderItemSchema = new Schema({
         min: 1
     }
 })
+
 const orderSchema = new Schema(
     {
         userId: {
@@ -27,12 +28,7 @@ const orderSchema = new Schema(
         items: [orderItemSchema],
         status: {
             type: String,
-            enum: [
-                ORDER_STATUS.PENDING,
-                ORDER_STATUS.PROCESSING,
-                ORDER_STATUS.PROCESSED,
-                ORDER_STATUS.FAILED
-            ],
+            enum: Object.values(ORDER_STATUS),
             default: ORDER_STATUS.PENDING
         },
         totals: {

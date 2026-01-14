@@ -6,6 +6,8 @@ dotenv.config({
 })
 
 const envSchema = z.object({
+    PORT: z.coerce.number().int().default(8010),
+
     // MongoDB variables
     MONGO_URI: z.url(),
     MAX_POOL_SIZE: z.coerce.number().int().positive().default(100),
@@ -22,7 +24,7 @@ const envSchema = z.object({
 
     // SQS Consumer variables
     VISIBILITY_TIMEOUT: z.coerce.number().int().positive().default(300), // default: 5 minutes
-    BATCH_SIZE: z.coerce.number().int().positive().default(5)
+    BATCH_SIZE: z.coerce.number().int().positive().default(1)
 })
 
 export const env = envSchema.parse(process.env)

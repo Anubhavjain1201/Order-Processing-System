@@ -1,26 +1,56 @@
 import { Consumer, type ConsumerOptions } from "sqs-consumer"
 import { sqsClient } from "../config/sqs-client.js"
 import { env } from "../config/env.js"
+import type { Message } from "@aws-sdk/client-sqs"
+
+// Function to handle and process SQS message
+const handleSQSMessage = async (
+    message: Message
+): Promise<Message | undefined> => {
+    return message
+}
 
 const consumerOptions: ConsumerOptions = {
-    // SQS queue URL
     queueUrl: env.SQS_QUEUE_URL,
-
-    // specify the sqsClient
     sqs: sqsClient,
-
-    // enable long polling
     waitTimeSeconds: 20,
-
-    // message visibility timeout
     visibilityTimeout: env.VISIBILITY_TIMEOUT,
-
-    // Process messages in batches
-    batchSize: env.BATCH_SIZE
-
-    // async function to handle message received from SQS
-    // handleMessage:,
+    batchSize: env.BATCH_SIZE,
+    handleMessage: handleSQSMessage
 }
 const consumer = Consumer.create(consumerOptions)
+
+// Handle consumer events
+consumer.on("message_processed", (message: Message) => {
+    console.log(`Consumer - Message processed event - ${message.MessageId}`)
+})
+
+consumer.on("message_received", (message: Message) => {
+    console.log(`Consumer - Message received event - ${message.MessageId}`)
+})
+
+consumer.on("error", (error) => {
+    console.log(`Consumer - Error event - ${error}`)
+})
+
+consumer.on("processing_error", (error) => {
+    console.log(`Consumer - Processing error event - ${error}`)
+})
+
+consumer.on("timeout_error", (error) => {
+    console.log(`Consumer - Timeout error event - ${error}`)
+})
+
+consumer.on("empty", () => {
+    console.log("Consumer - Empty event - Queue is empty. Nothing to process!")
+})
+
+consumer.on("started", () => {
+    console.log("Consumer - Started event - Consumer started")
+})
+
+consumer.on("stopped", () => {
+    console.log("Consumer - Stopped event - Consumer stopped")
+})
 
 export default consumer

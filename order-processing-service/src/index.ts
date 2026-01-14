@@ -1,3 +1,5 @@
+import app from "./app.js"
+import { env } from "./config/env.js"
 import { connectDb } from "./db/db-manager.js"
 import consumer from "./worker/consumer.js"
 
@@ -6,7 +8,12 @@ connectDb()
         // start the consumer
         consumer.start()
 
-        console.log(`order-processing-service is up and running`)
+        // start the server
+        app.listen(env.PORT, () => {
+            console.log(
+                `order-processing-service running and listening on port: ${env.PORT}`
+            )
+        })
     })
     .catch((error) => {
         console.log(

@@ -19,10 +19,12 @@ const handleSQSMessage = async (
             return message
         }
 
+        // Parse the JSON string to an object
+        const parsedBody = JSON.parse(message.Body)
+
         // sanitize message body
-        const validatedBody: MessageBodyType = MessageBodySchema.parse(
-            message.Body
-        )
+        const validatedBody: MessageBodyType =
+            MessageBodySchema.parse(parsedBody)
 
         // process message
         await MessageProcessingService.processSQSMessage(validatedBody)
@@ -55,15 +57,15 @@ consumer.on("message_received", (message: Message) => {
 })
 
 consumer.on("error", (error) => {
-    console.log(`Consumer - Error event - ${error}`)
+    console.log(`Consumer - Error event - ${error.message}`)
 })
 
 consumer.on("processing_error", (error) => {
-    console.log(`Consumer - Processing error event - ${error}`)
+    console.log(`Consumer - Processing error event - ${error.message}`)
 })
 
 consumer.on("timeout_error", (error) => {
-    console.log(`Consumer - Timeout error event - ${error}`)
+    console.log(`Consumer - Timeout error event - ${error.message}`)
 })
 
 consumer.on("empty", () => {

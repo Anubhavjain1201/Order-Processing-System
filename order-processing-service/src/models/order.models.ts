@@ -1,4 +1,4 @@
-import mongoose, { Schema } from "mongoose"
+import mongoose, { Schema, type InferSchemaType } from "mongoose"
 import { ORDER_STATUS } from "../utils/constants.js"
 
 const orderItemSchema = new Schema({
@@ -57,4 +57,5 @@ const orderSchema = new Schema(
     { timestamps: true }
 )
 
+export type OrderType = InferSchemaType<typeof orderSchema>
 export const Order = mongoose.model("Order", orderSchema)

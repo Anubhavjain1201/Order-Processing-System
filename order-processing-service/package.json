@@ -20,13 +20,16 @@
         "@aws-sdk/client-sqs": "^3.966.0",
         "dotenv": "^17.2.3",
         "express": "^5.2.1",
+        "mailgen": "^2.0.32",
         "mongoose": "^9.1.2",
+        "nodemailer": "^7.0.12",
         "sqs-consumer": "^14.2.0",
         "zod": "^4.3.5"
     },
     "devDependencies": {
         "@types/express": "^5.0.6",
         "@types/node": "^25.0.6",
+        "@types/nodemailer": "^7.0.5",
         "nodemon": "^3.1.11",
         "prettier": "^3.7.4",
         "typescript": "^5.9.3"

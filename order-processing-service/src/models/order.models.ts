@@ -1,4 +1,4 @@
-import mongoose, { Schema } from "mongoose"
+import mongoose, { Schema, type InferSchemaType } from "mongoose"
 import { ORDER_STATUS } from "../utils/constants.js"
 
 const orderItemSchema = new Schema({
@@ -17,6 +17,7 @@ const orderItemSchema = new Schema({
         min: 1
     }
 })
+
 const orderSchema = new Schema(
     {
         userId: {
@@ -27,12 +28,7 @@ const orderSchema = new Schema(
         items: [orderItemSchema],
         status: {
             type: String,
-            enum: [
-                ORDER_STATUS.PENDING,
-                ORDER_STATUS.PROCESSING,
-                ORDER_STATUS.PROCESSED,
-                ORDER_STATUS.FAILED
-            ],
+            enum: Object.values(ORDER_STATUS),
             default: ORDER_STATUS.PENDING
         },
         totals: {
@@ -52,9 +48,14 @@ const orderSchema = new Schema(
         orderDate: {
             type: Date,
             default: Date.now
+        },
+        emailSent: {
+            type: Boolean,
+            default: false
         }
     },
     { timestamps: true }
 )
 
+export type OrderType = InferSchemaType<typeof orderSchema>
 export const Order = mongoose.model("Order", orderSchema)

@@ -1,0 +1,5 @@
+/node_modules
+/localstack-data
+.env
+*.env
+/build
